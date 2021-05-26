@@ -15,6 +15,7 @@ class SageAdressimport(Document):
         excel_file = frappe.utils.file_manager.get_file_path(self.datei)
         #frappe.publish_progress(0, 'Lese Excel Tabelle, das kann etwas dauern...')
         df = pd.read_excel(excel_file)
+        df = df.replace(np.nan, '', regex=True)
         for index, row in df.iterrows():
             cust = "CUST-" + row["Kd.-Nr."]
             print("Processing " + cust)
@@ -24,7 +25,8 @@ class SageAdressimport(Document):
                     "doctype": "Customer",
                     "title": row["Name"],
                     "customer_name": row["Name"],
-                    "sage_notizen": row["Memo"].replace("  ","<br>")
+                    "sage_notizen": row["Memo"].replace("  ","<br>"),
+                    "sage_adresse": row["Adresse"]
                 })
                 cust_doc.insert()
                 frappe.rename_doc("Customer", cust_doc.name, cust)
@@ -32,15 +34,44 @@ class SageAdressimport(Document):
                 address_doc = frappe.get_doc({
                     "doctype": "Address",
                     "address_title": row["Name"] + "-haupt",
-                    "pincode": row["PLZ"],
-                    "address_line1": row["Straße"],
-                    "city": row["Ort"],
                     "is_primary_address": 1,
                     "is_shipping_address": 1,
-                    "email_id": row["Email"],
-                    "phone": row["Telefon"]
                     }
                 )
+                #Pflichtfelder Prüfen
+                if row["Email"] != "":
+                    address_doc.email_id = row["Email"]
+                else:
+                    address_doc.email_id = "gibts@gar.nicht"
+
+                if row["Straße"] != "":
+                    address_doc.address_line1 = row["Straße"]
+                else:
+                    address_doc.address_line1 = "STRASSE FEHLT!"
+                
+                if  row["Telefon"] != "":
+                    address_doc.phone = row["Telefon"]
+                else:
+                    address_doc.phone = "TELEFON FEHLT"
+                    
+                if row["PLZ"] != "":
+                    address_doc.pincode = row["PLZ"]
+                else:
+                    address_doc.pincode = "PLZ FEHLT"
+                
+                if row["Ort"] != "":
+                    address_doc.city = row["Ort"]
+                else:
+                    address_doc.city = "ORT FEHLT"
+                
+                #land auflösen
+                country = frappe.get_all("Country", filters={"code": row["Land"].lower() })
+                if len(country) >= 1:
+                    address_doc.country = country[0]["name"]
+                else:
+                    address_doc.country = "Germany"
+
+                
                 address_doc.insert()
                 #Dynamic Link einfügen
                 link_doc = frappe.get_doc(
