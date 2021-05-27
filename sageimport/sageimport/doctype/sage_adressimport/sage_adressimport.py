@@ -8,9 +8,14 @@ from frappe.model.document import Document
 from frappe.utils import file_manager
 import pandas as pd
 import numpy as np
+from frappe import enqueue
 
 class SageAdressimport(Document):
     @frappe.whitelist()
+    def enqueue_import(self):
+         enqueue(self.do_import, queue="long",timeout=3600)
+         frappe.msgprint("Import als Backghroundjob gestartet")
+
     def do_import(self):
         #Excel Datei als Pandas Dataframe laden
         excel_file = frappe.utils.file_manager.get_file_path(self.datei)
@@ -93,6 +98,7 @@ class SageAdressimport(Document):
                 output += str(e)
         self.output = output
         self.save()
+        frappe.msgprint("Sage Adressimport abgeschlossen.")
 
 
                 
