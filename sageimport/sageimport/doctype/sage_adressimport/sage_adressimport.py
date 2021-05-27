@@ -14,7 +14,7 @@ class SageAdressimport(Document):
     @frappe.whitelist()
     def enqueue_import(self):
          enqueue(self.do_import, queue="long",timeout=3600)
-         frappe.msgprint("Import als Backghroundjob gestartet")
+         frappe.msgprint("Import als Backgroundjob gestartet.")
 
     def do_import(self):
         #Excel Datei als Pandas Dataframe laden
