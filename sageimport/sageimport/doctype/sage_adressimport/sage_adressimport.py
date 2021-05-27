@@ -90,7 +90,7 @@ class SageAdressimport(Document):
                     cust_doc.customer_primary_address = address_doc.name
                     cust_doc.save()
             except Exception as e:
-                output += e.message
+                output += str(e)
         self.output = output
         self.save()
 
